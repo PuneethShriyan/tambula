@@ -1,0 +1,267 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Tambola Live</title>
+
+<style>
+:root{
+    --primary:#6366f1;
+    --panel:rgba(255,255,255,.18);
+    --gold:#facc15;
+    --amber:#f59e0b;
+    --dark:#0f172a;
+}
+
+html,body{height:100%;overflow:hidden;margin:0}
+*{box-sizing:border-box}
+body{
+    font-family:Poppins,system-ui,sans-serif;
+    background:radial-gradient(circle at top,#7c83ff,#1e1b4b);
+    display:flex;align-items:center;justify-content:center;
+    padding:clamp(1rem,3vw,3rem);color:white;
+}
+
+/* BACKGROUND */
+.bg{
+    position:fixed;inset:0;
+    background:
+        radial-gradient(circle at 20% 15%,rgba(255,255,255,.18),transparent 35%),
+        radial-gradient(circle at 80% 75%,rgba(99,102,241,.3),transparent 40%);
+    animation:float 10s ease-in-out infinite alternate;
+    z-index:-1;
+}
+@keyframes float{from{opacity:.8}to{opacity:1}}
+
+/* LAYOUT */
+.app{
+    width:100%;max-width:1500px;min-height:85vh;
+    display:grid;
+    grid-template-columns:minmax(300px,380px) 1fr;
+    gap:clamp(1.5rem,3vw,3rem);
+}
+
+/* PANEL */
+.panel{
+    background:var(--panel);backdrop-filter:blur(18px);
+    border-radius:28px;padding:2rem;
+    display:flex;flex-direction:column;
+    justify-content:space-between;
+    box-shadow:0 30px 60px rgba(0,0,0,.35);
+}
+.status{
+    text-align:center;font-size:clamp(1.2rem,2vw,1.6rem);
+    font-weight:700;min-height:2.4rem;color:var(--gold);
+    transition:.3s;
+}
+
+/* BALL */
+.ball{
+    width:clamp(150px,18vw,210px);height:clamp(150px,18vw,210px);
+    margin:auto;border-radius:50%;
+    background:radial-gradient(circle at 30% 30%,#fff,var(--gold) 45%,#b45309);
+    color:var(--dark);display:flex;align-items:center;justify-content:center;
+    font-size:clamp(4rem,6vw,6rem);font-weight:900;
+    box-shadow:inset -15px -25px 40px rgba(0,0,0,.25),
+               0 35px 70px rgba(0,0,0,.55);
+}
+.ball.animate{animation:spinBounce 1.15s cubic-bezier(.34,1.56,.64,1);}
+@keyframes spinBounce{
+    0%{transform:translate(var(--x),var(--y)) scale(.2) rotate(0);opacity:0}
+    65%{transform:translate(0,-18px) scale(1.1) rotate(540deg);opacity:1}
+    100%{transform:none rotate(720deg)}
+}
+
+/* CONTROLS */
+.controls{display:grid;gap:.9rem}
+button{
+    padding:1rem;font-size:1.05rem;font-weight:700;
+    border-radius:16px;border:none;cursor:pointer;
+    background:linear-gradient(135deg,#818cf8,#22d3ee);color:#020617;
+}
+button:active{transform:scale(.96)}
+button.active{
+    background:linear-gradient(135deg,var(--gold),var(--amber));
+    box-shadow:0 0 18px rgba(250,204,21,.7);
+}
+
+/* BOARD */
+.board{
+    background:var(--panel);backdrop-filter:blur(18px);
+    border-radius:28px;padding:clamp(1rem,2vw,2rem);
+    display:grid;grid-template-columns:repeat(10,1fr);gap:clamp(.6rem,1vw,1rem);
+}
+.cell{
+    aspect-ratio:1;border-radius:50%;
+    background:rgba(255,255,255,.25);
+    display:flex;align-items:center;justify-content:center;
+    font-weight:700;font-size:clamp(1.3rem,2vw,1.8rem); /* INCREASED FONT */
+}
+.cell.hit{
+    background:radial-gradient(circle,var(--gold),var(--amber));
+    color:#1e293b;animation:pop .4s ease;
+}
+@keyframes pop{from{transform:scale(.6)}to{transform:scale(1.1)}}
+
+/* CONFETTI WORDS */
+.confetti{
+    position:absolute;font-size:clamp(1rem,2vw,2rem);
+    font-weight:800;color:var(--gold);pointer-events:none;
+    animation:floatUp 2.5s ease forwards;
+}
+@keyframes floatUp{
+    0%{opacity:1;transform:translateY(0) rotate(0deg);}
+    100%{opacity:0;transform:translateY(-120px) rotate(360deg);}
+}
+
+/* PARTICLES */
+.particle{
+    position:absolute;width:6px;height:6px;border-radius:50%;
+    pointer-events:none;
+    animation:particleAnim 1s linear forwards;
+}
+@keyframes particleAnim{
+    0%{opacity:1;transform:translate(0,0) scale(1);}
+    100%{opacity:0;transform:translate(var(--dx),var(--dy)) scale(0);}
+}
+
+/* MODAL */
+.modal{position:fixed;inset:0;background:rgba(0,0,0,.65);
+display:none;align-items:center;justify-content:center;z-index:10;}
+.modal.show{display:flex}
+.modal-box{background:#111827;padding:2rem;border-radius:20px;text-align:center;width:90%;max-width:380px;}
+.modal-actions{display:flex;gap:1rem;margin-top:1.5rem}
+.modal-actions button{flex:1}
+
+/* RESPONSIVE */
+@media(max-width:1100px){.board{grid-template-columns:repeat(8,1fr)}}
+@media(max-width:800px){.app{grid-template-columns:1fr}.board{grid-template-columns:repeat(5,1fr)}}
+@media(max-width:500px){.board{grid-template-columns:repeat(4,1fr)}}
+</style>
+</head>
+
+<body>
+<div class="bg"></div>
+
+<div class="app">
+    <div class="panel">
+        <div id="status" class="status">🎉 Tambola Live</div>
+        <div id="ball" class="ball">--</div>
+        <div class="controls">
+            <button id="play">▶ Play</button>
+            <button id="pause">⏸ Pause</button>
+            <button id="reset">🔁 Reset</button>
+        </div>
+    </div>
+    <div id="board" class="board"></div>
+</div>
+
+<!-- RESET MODAL -->
+<div id="modal" class="modal">
+    <div class="modal-box">
+        <p>Are you sure you want to reset the game?</p>
+        <div class="modal-actions">
+            <button id="yes">Yes</button>
+            <button id="no">Cancel</button>
+        </div>
+    </div>
+</div>
+
+<script>
+const TOTAL=90,INTERVAL=6500;
+let picked=new Set(),timer=null,running=false;
+const board=document.getElementById("board");
+const ball=document.getElementById("ball");
+const status=document.getElementById("status");
+const playBtn=play,pauseBtn=pause;
+const modal=document.getElementById("modal");
+const yesBtn=document.getElementById("yes");
+const noBtn=document.getElementById("no");
+
+/* CALLER PHRASES & LUCK WORDS */
+const phrases=["🎲 Next number coming!","🍀 Lucky number soon!","🔔 Eyes on the board!","🎉 Get ready!","🔥 Here we go!"];
+const luckWords=["Lucky!","Your Time!","Great!","Almost!","Fortune!","Nice!"];
+
+/* INIT BOARD */
+for(let i=1;i<=TOTAL;i++){
+    const c=document.createElement("div");
+    c.className="cell";c.id="c"+i;c.textContent=i;
+    board.appendChild(c);
+}
+
+/* DRUM SOUND */
+const ctx=new AudioContext();
+function drum(){
+    const o=ctx.createOscillator(),g=ctx.createGain();
+    o.type="triangle";o.frequency.value=110;o.connect(g);g.connect(ctx.destination);
+    o.start();g.gain.exponentialRampToValueAtTime(.0001,ctx.currentTime+.4);
+}
+
+/* RANDOM ENTRY */
+function randomEntry(){
+    const d=360;const a=[[-d,0],[d,0],[0,-d],[0,d]];
+    return a[Math.random()*4|0];
+}
+
+/* CONFETTI / PARTICLE */
+function showLuck(){
+    const word=luckWords[Math.random()*luckWords.length|0];
+    const span=document.createElement("div");span.className="confetti";span.textContent=word;
+    document.body.appendChild(span);span.style.left=Math.random()*window.innerWidth+"px";
+    setTimeout(()=>span.remove(),2500);
+
+    // particles
+    for(let i=0;i<20;i++){
+        const p=document.createElement("div");p.className="particle";
+        const angle=Math.random()*2*Math.PI;
+        const radius=Math.random()*80+30;
+        p.style.setProperty("--dx",radius*Math.cos(angle)+"px");
+        p.style.setProperty("--dy",radius*Math.sin(angle)+"px");
+        p.style.backgroundColor=`hsl(${Math.random()*360},80%,60%)`;
+        p.style.left=window.innerWidth/2+"px";
+        p.style.top=window.innerHeight/2+"px";
+        document.body.appendChild(p);
+        setTimeout(()=>p.remove(),1000);
+    }
+}
+
+/* PICK LOGIC */
+function pick(){
+    if(picked.size===TOTAL){stop();return;}
+
+    if(Math.random()<0.15){status.textContent=phrases[Math.random()*phrases.length|0];showLuck();}
+
+    drum();
+    setTimeout(()=>{
+        let n;do{n=Math.ceil(Math.random()*TOTAL)}while(picked.has(n));
+        picked.add(n);
+
+        document.getElementById("c"+n).classList.add("hit");
+        const [x,y]=randomEntry();
+        ball.style.setProperty("--x",x+"px");
+        ball.style.setProperty("--y",y+"px");
+        ball.classList.remove("animate");void ball.offsetWidth;
+        ball.textContent=n;ball.classList.add("animate");
+
+        status.textContent=`✅ Number ${n}`;
+        speechSynthesis.speak(new SpeechSynthesisUtterance(n));
+        showLuck();
+    },1200);
+}
+
+/* CONTROLS */
+function start(){if(running)return;running=true;playBtn.classList.add("active");pauseBtn.classList.remove("active");timer=setInterval(pick,INTERVAL);}
+function stop(){clearInterval(timer);running=false;pauseBtn.classList.add("active");playBtn.classList.remove("active");}
+function resetGame(){stop();picked.clear();ball.textContent="--";status.textContent="🎉 Tambola Live";document.querySelectorAll(".cell").forEach(c=>c.classList.remove("hit"));}
+
+/* MODAL */
+reset.onclick=()=>modal.classList.add("show");
+no.onclick=()=>modal.classList.remove("show");
+yes.onclick=()=>{modal.classList.remove("show");resetGame();};
+
+playBtn.onclick=start;
+pauseBtn.onclick=stop;
+</script>
+</body>
+</html>

@@ -1,0 +1,358 @@
+<html>
+
+<head>
+    <style>
+        * {
+            box-sizing: border-box;
+            margin: 0;
+            padding: 1px;
+        }
+
+        body {
+            counter-reset: numbers;
+            background: #16a085;
+            font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, Oxygen, Ubuntu, Cantarell, 'Open Sans', 'Helvetica Neue', sans-serif;
+            display: flex;
+            min-height: 100vh;
+            justify-content: center;
+            align-items: center;
+            flex-direction: column;
+        }
+
+        .twitter-button {
+            position: absolute;
+            right: 1rem;
+            top: 1rem;
+        }
+
+        input[type=checkbox] {
+            position: absolute;
+            text-indent: -9999px;
+            opacity: 0;
+        }
+
+        .tambola {
+            display: grid;
+            grid-template-areas:
+                "pick board"
+                "count count";
+            grid-gap: 1rem;
+            top: 25px;
+            position: relative;
+        }
+
+        .board {
+            grid-area: board;
+            display: grid;
+            grid-template-columns: repeat(10, 1fr);
+            margin: auto;
+            order: 2;
+            background: rgba(0, 0, 0, 0.3);
+            padding: 1rem;
+            justify-content: center;
+            position: relative;
+        }
+
+        .board::after {
+            opacity: 0;
+            transition: 0.3s;
+            content: "GAME OVER";
+            position: absolute;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            text-align: center;
+            left: 0;
+            top: 0;
+            bottom: 0;
+            right: 0;
+            z-index: 1;
+            background: rgba(255, 255, 255, 0.5);
+            font-size: 10vh;
+            color: rgb(200, 0, 0);
+            text-shadow: 1px 1px rgb(150, 0, 0),
+                2px 2px rgb(150, 0, 0),
+                3px 3px rgb(150, 0, 0),
+                4px 4px rgb(150, 0, 0);
+        }
+
+        .board-finished::after {
+            opacity: 1;
+        }
+
+        .number-box {
+            display: flex;
+        }
+
+        .number-box label {
+            display: flex;
+            flex: 1;
+            justify-content: center;
+            align-items: center;
+            font-size: 5vh;
+            color: black;
+            background: #f1c40f;
+            border-radius: 50%;
+            transform: scale(0.8);
+            transition: 1s;
+            transition-timing-function: cubic-bezier(.86, -0.41, .38, 1.48);
+            position: relative;
+            height: 9vh;
+            width: 9vh;
+            font-weight: 600;
+        }
+
+        .number-box input:checked {
+            counter-increment: numbers;
+        }
+
+        .number-box label::before {
+            position: absolute;
+            content: "";
+            left: 0;
+            top: calc(50% - 0.5vh);
+            height: 1vh;
+            width: 0;
+            background: rgba(200, 0, 0, 0.5);
+            transition: 0.3s;
+        }
+
+        .number-box label::after {
+            transform: rotate(90deg);
+        }
+
+        .number-box input:checked+label {
+            background: #2ecc71;
+            transform: scale(1);
+            font-weight: bold;
+        }
+
+        .number-box input:checked+label::before {
+            width: 100%;
+        }
+
+        .count {
+            position: relative;
+            order: 1;
+            color: white;
+            font-size: 1.5rem;
+            font-weight: 100;
+            grid-area: count;
+            background: rgba(0, 0, 0, 0.3);
+            padding: 1rem;
+        }
+
+        .count::after {
+            content: counter(numbers);
+        }
+
+        .pick {
+            grid-area: pick;
+            min-width: 160px;
+            background: rgba(0, 0, 0, 0.3);
+            display: flex;
+            justify-content: center;
+            flex-direction: column;
+        }
+
+        .pick button {
+            font-size: 2rem;
+            padding: 0.5rem 1rem;
+            border-width: 1rem;
+            border-color: #16A085;
+            background: none;
+            color: #fff;
+            width: 100%;
+            outline: none;
+            position: relative;
+        }
+
+        .current {
+            display: flex;
+            padding: 2rem;
+            color: #16A085;
+            font-size: 3rem;
+            background: rgba(0, 0, 0, 0.5);
+            justify-content: center;
+        }
+
+
+        @media screen and (max-width: 480px) {
+            .tambola {
+                grid-template-areas:
+                    "pick"
+                    "count"
+                    "board"
+            }
+
+            .board {
+                grid-template-columns: repeat(10, 1fr);
+            }
+
+            .number-box label {
+                width: 5vh;
+                height: 5vh;
+                font-size: 2.5vh;
+                font-weight: bold;
+            }
+        }
+
+        h2.header {
+            font-family: Georgia, sans-serif;
+            display: flex;
+            flex: 1;
+            justify-content: center;
+            align-items: center;
+            font-size: 5vh;
+            color: white;
+            transform: scale(0.8);
+            transition: 1s;
+            transition-timing-function: cubic-bezier(.86, -0.41, .38, 1.48);
+        }
+    </style>
+</head>
+
+<body>
+    <!-- <h2 class="header">Your Game Starts Now</h2> -->
+    <div class="tambola">
+        <div class="pick">
+            <div class="start">
+                <button onclick="reset()" :disabled="isFinished" type="button">CLEAR</button>
+            </div>
+            <button onclick="start()" :disabled="isFinished" type="button">PLAY</button>
+
+            <div class="current" v-text="currentNumber"></div>
+
+            <div class="stop">
+                <button onclick="resume()" :disabled="isFinished" type="button">PAUSE</button>
+            </div>
+        </div>
+        <div class="board" id="board">
+        </div>
+    </div>
+</body>
+<script src="./jquery.js"></script>
+<script>
+    let timeInterval = 6000;
+    let totalNumber = 90;
+    let numberTemplate = "<div class='number-box'><input disabled='disabled' type='checkbox' id='number-<!--number-->'><label for='number-<!--number-->'><!--number--></label></div>"
+    let numberArray = [];
+    let alertType = {
+        localStorageNE: "Local storage not available. Please check !"
+    }
+    var lingoWords_number = ["Beginning", "Kaala dhan", "Happy Family", "Knock at the door", "Symbol of congress", "Super sixer", "Colours of rainbow", "Big fat lady number 8", "Doctor's time", "A big fat hen", "1 and 1 eleven", "One dozen", "Unlucky for some lucky for me", "Valentine Day", "Yet to be kissed", "Sweet sixteen", "Dancing Queen", "Voting age", "End of the teens", "Blind 20", "President salute", "Two little ducks", "You and me", "Two dozen", "Silver Jubilee Number", "Republic Day", "Gateway to heaven", "Duck and its mate", "In your prime", "Its middle Age", "Time for fun", "Mouth Full", "All the 3s", "Dil mange more", "Flirty Husband", "Popular Number", "Mixed luck", "Oversize", "Watch your waistline", "Naughty at 40", "Life beguns at 41", "Quit India Movement", "Pain in the knee", "All the Fours", "Halfway there", "Up to tricks", "Year of Independence", "Four dozen", "Rise and shine", "Half Century, Golden Jubilee", "Charity begins at 51", "Pack of cards", "Pack with a joker", "Pack with two jokers", "All the fives", "Pick up sticks", "Mutiny Year", "Time to retire", "Just retired", "Five dozen", "Bakers bun", "Click the two", "Click the three", "Catch the chor", "Old age pension", "Chakke pe chakka", "Made in heaven", "Saving grace", "Ulta Pulta", "Lucky blind", "Lucky bachelor", "Lucky couple", "A crutch and a flea", "Lucky chor", "Diamond Jubilee", "Lucky six", "Two hockey sticks", "Heaven's gate", "lucky nine", "Gandhi's breakfast", "Corner shot", "Last of the two", "India wins Cricket World Cup", "Last of the Fours", "Grandma", "Last six", "Grandpa", "Two Fat ladies", "All but one", "Top of the house"];
+    var w = window.speechSynthesis;
+    var array = new Array()
+    for (var i = 1; i <= totalNumber; ++i) {
+        array.push(i);
+    }
+    $(function () {
+        for (let index = 1; index <= totalNumber; index++) {
+            let template = numberTemplate;
+            template = template.split("<!--number-->").join(index);
+            numberArray.push(template);
+        }
+        $('#board').append(numberArray);
+        if (typeof (Storage) !== "undefined") {
+            localStorage.housie = "";
+        }
+    })
+
+    let pickNumber = () => {
+        let arr = getStorageNumbers();
+        console.log(arr)
+        while (1) {
+            let number = JSON.stringify(Math.ceil(Math.random() * totalNumber));
+            console.log(number)
+            if (!arr.includes(number)) {
+                saveLocalStorage(number.toString());
+                var n = array[number].toString();
+                var msg = new SpeechSynthesisUtterance(n - 1);
+                msg.pitch = 0;
+                w.speak(msg);
+                $('.current').text(number);
+                //$('.header').text(lingoWords_number[n+2]);
+                $('#number-' + number).attr('checked', true);
+                break;
+            } else if (arr.length == totalNumber) {
+                $('.board').addClass('board-finished');
+                stop();
+                break;
+            }
+        }
+    }
+
+    let intervalId;
+    let start = () => {
+        intervalId = setInterval(pickNumber, timeInterval);
+    }
+
+    let resume = () => {
+        clearInterval(intervalId);
+    }
+
+    let reset = () => {
+        clearInterval(intervalId);
+        clearLocalStorage();
+        $('input:checkbox').removeAttr('checked');
+        $('.board').removeClass('board-finished');
+        $('.board').addClass('board');
+    }
+
+    const clearLocalStorage = () => {
+        if (typeof (Storage) !== "undefined") {
+            localStorage.housie = "";
+        } else
+            alert(alertType.localStorageNE);
+    }
+
+    const saveLocalStorage = (currentValue) => {
+        if (typeof (Storage) !== "undefined") {
+            if (localStorage.getItem("housie")) {
+                let housie = JSON.parse(JSON.stringify(localStorage.getItem("housie")));
+                if (housie && housie != "") {
+                    bfArray = housie.split(',');
+                }
+                if (bfArray.indexOf(currentValue) === -1) {
+                    bfArray.push(currentValue);
+                }
+                housie = bfArray.join();
+                localStorage.setItem("housie", housie);
+            } else {
+                localStorage.setItem("housie", currentValue);
+            }
+        } else
+            alert(alertType.localStorageNE);
+    }
+
+    const getStorageNumbers = () => {
+        let bfArray = []
+        if (localStorage.getItem("housie")) {
+            let housie = JSON.parse(JSON.stringify(localStorage.getItem("housie")));
+            if (housie && housie != "") {
+                bfArray = housie.split(',');
+            }
+        }
+        return bfArray;
+    }
+
+    const checkCurrentNumber = (currentValue) => {
+        let valid = false;
+        if (typeof (Storage) !== "undefined") {
+            if (localStorage.getItem("housie")) {
+                let housie = JSON.parse(JSON.stringify(localStorage.getItem("housie")));
+                if (housie && housie === "") {
+                    valid = true;
+                }
+                if (bfArray.indexOf(currentValue) === -1) {
+                    valid = true
+                }
+                return valid
+            } else
+                return true;
+        } else
+            alert(alertType.localStorageNE);
+    }
+</script>
+
+</html>

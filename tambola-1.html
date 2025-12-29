@@ -1,0 +1,273 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<title>Tambola Live</title>
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+
+<style>
+:root {
+    --bg1: #0f172a;
+    --bg2: #1e293b;
+    --gold: #facc15;
+    --green: #22c55e;
+    --pink: #ec4899;
+    --cyan: #22d3ee;
+}
+
+* {
+    box-sizing: border-box;
+    margin: 0;
+}
+
+body {
+    min-height: 100vh;
+    font-family: "Poppins", system-ui, sans-serif;
+    background: radial-gradient(circle at top, #334155, var(--bg1));
+    display: flex;
+    justify-content: center;
+    align-items: center;
+    overflow: hidden;
+    color: white;
+}
+
+/* ========== APP ========== */
+.app {
+    width: 100%;
+    max-width: 1200px;
+    height: 90vh;
+    display: grid;
+    grid-template-columns: 300px 1fr;
+    gap: 1.5rem;
+    padding: 1.5rem;
+}
+
+/* ========== LEFT PANEL ========== */
+.panel {
+    background: linear-gradient(160deg, #020617, #020617aa);
+    border-radius: 20px;
+    padding: 1.5rem;
+    display: flex;
+    flex-direction: column;
+    justify-content: space-between;
+    box-shadow: 0 30px 60px rgba(0,0,0,0.4);
+}
+
+h1 {
+    font-size: 2rem;
+    color: var(--gold);
+}
+
+/* BALL DISPLAY */
+.ball {
+    width: 180px;
+    height: 180px;
+    border-radius: 50%;
+    margin: auto;
+    background:
+        radial-gradient(circle at 30% 30%, #fff, var(--gold) 40%, #b45309);
+    color: #111827;
+    display: flex;
+    justify-content: center;
+    align-items: center;
+    font-size: 5rem;
+    font-weight: 800;
+    box-shadow: inset -10px -20px 30px rgba(0,0,0,0.25),
+                0 30px 60px rgba(0,0,0,0.6);
+    animation: idle 3s ease-in-out infinite;
+}
+
+.ball.roll {
+    animation: rollIn 0.8s cubic-bezier(.25,.8,.25,1);
+}
+
+@keyframes rollIn {
+    0% { transform: translateX(-300px) rotate(-360deg) scale(0.3); opacity: 0; }
+    100% { transform: translateX(0) rotate(0) scale(1); opacity: 1; }
+}
+
+@keyframes idle {
+    0%,100% { transform: translateY(0); }
+    50% { transform: translateY(-10px); }
+}
+
+/* CONTROLS */
+.controls {
+    display: grid;
+    gap: 0.75rem;
+}
+
+button {
+    padding: 0.8rem;
+    border-radius: 12px;
+    border: none;
+    font-size: 1.1rem;
+    font-weight: 600;
+    cursor: pointer;
+    background: linear-gradient(135deg, var(--pink), var(--cyan));
+    color: white;
+    transition: transform .2s, box-shadow .2s;
+}
+
+button:hover {
+    transform: translateY(-2px);
+    box-shadow: 0 10px 20px rgba(0,0,0,0.4);
+}
+
+button.secondary {
+    background: linear-gradient(135deg, #64748b, #475569);
+}
+
+/* ========== BOARD ========== */
+.board {
+    background: linear-gradient(160deg, #020617, #020617aa);
+    border-radius: 20px;
+    padding: 1.5rem;
+    display: grid;
+    grid-template-columns: repeat(10, 1fr);
+    gap: 0.7rem;
+    box-shadow: 0 30px 60px rgba(0,0,0,0.4);
+}
+
+/* NUMBER CELLS */
+.cell {
+    aspect-ratio: 1;
+    border-radius: 50%;
+    background: #1e293b;
+    display: flex;
+    justify-content: center;
+    align-items: center;
+    font-weight: 700;
+    font-size: 1.2rem;
+    color: var(--gold);
+    transition: all 0.3s ease;
+}
+
+.cell.hit {
+    background: radial-gradient(circle, #22c55e, #15803d);
+    color: white;
+    transform: scale(1.1);
+    animation: pop 0.4s ease;
+}
+
+@keyframes pop {
+    0% { transform: scale(0.6); }
+    70% { transform: scale(1.2); }
+    100% { transform: scale(1.1); }
+}
+
+/* MOBILE */
+@media (max-width: 900px) {
+    .app {
+        grid-template-columns: 1fr;
+        height: auto;
+    }
+
+    .board {
+        grid-template-columns: repeat(5, 1fr);
+    }
+}
+</style>
+</head>
+
+<body>
+
+<div class="app">
+
+    <!-- PANEL -->
+    <div class="panel">
+        <h1>🎉 Tambola Live</h1>
+
+        <div class="ball" id="ball">--</div>
+
+        <div class="controls">
+            <button onclick="start()">▶ Play</button>
+            <button class="secondary" onclick="stop()">⏸ Pause</button>
+            <button class="secondary" onclick="reset()">🔁 Reset</button>
+        </div>
+    </div>
+
+    <!-- BOARD -->
+    <div class="board" id="board"></div>
+
+</div>
+
+<script>
+/* ===== CONFIG ===== */
+const TOTAL = 90;
+const INTERVAL = 5500;
+
+/* ===== STATE ===== */
+let picked = new Set();
+let timer = null;
+let running = false;
+
+/* ===== INIT BOARD ===== */
+const board = document.getElementById("board");
+const ball = document.getElementById("ball");
+
+for (let i = 1; i <= TOTAL; i++) {
+    const d = document.createElement("div");
+    d.className = "cell";
+    d.id = "c" + i;
+    d.textContent = i;
+    board.appendChild(d);
+}
+
+/* ===== GAME LOGIC ===== */
+function pick() {
+    if (picked.size === TOTAL) {
+        stop();
+        return;
+    }
+
+    let num;
+    do {
+        num = Math.ceil(Math.random() * TOTAL);
+    } while (picked.has(num));
+
+    picked.add(num);
+
+    const cell = document.getElementById("c" + num);
+    cell.classList.add("hit");
+
+    ball.classList.remove("roll");
+    void ball.offsetWidth; // reflow
+    ball.textContent = num;
+    ball.classList.add("roll");
+
+    speak(num);
+}
+
+function speak(num) {
+    speechSynthesis.cancel();
+    const msg = new SpeechSynthesisUtterance(num);
+    msg.rate = 0.9;
+    msg.pitch = 1;
+    speechSynthesis.speak(msg);
+}
+
+/* ===== CONTROLS ===== */
+function start() {
+    if (running) return; // ✅ no overlap
+    running = true;
+    timer = setInterval(pick, INTERVAL);
+}
+
+function stop() {
+    clearInterval(timer);
+    running = false;
+}
+
+function reset() {
+    stop();
+    picked.clear();
+    ball.textContent = "--";
+    document.querySelectorAll(".cell").forEach(c =>
+        c.classList.remove("hit")
+    );
+}
+</script>
+
+</body>
+</html>
