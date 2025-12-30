@@ -226,6 +226,25 @@ function showLuck(){
     }
 }
 
+function speakTambolaNumber(n) {
+    let text = "";
+
+    if (n <= 9) {
+        // Speak normally for 1–9
+        text = n.toString();
+    } else {
+        // Split digits
+        const digits = n.toString().split("").join(" ");
+        text = `${digits}... ${n}`;
+    }
+
+    const utter = new SpeechSynthesisUtterance(text);
+    utter.rate = 0.9;   // slightly slower, clearer
+    utter.pitch = 1;
+    speechSynthesis.speak(utter);
+}
+
+
 /* PICK LOGIC */
 function pick(){
     if(picked.size===TOTAL){stop();return;}
@@ -245,7 +264,8 @@ function pick(){
         ball.textContent=n;ball.classList.add("animate");
 
         status.textContent=`✅ Number ${n}`;
-        speechSynthesis.speak(new SpeechSynthesisUtterance(n));
+        // speechSynthesis.speak(new SpeechSynthesisUtterance(n));
+        speakTambolaNumber(n);
         showLuck();
     },1200);
 }
